@@ -16,6 +16,7 @@ from fastapi import FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from scipy.io import wavfile
+import base64
 
 from common.constants import (
     DEFAULT_ASSIST_TEXT_WEIGHT,
@@ -179,9 +180,19 @@ if __name__ == "__main__":
             style_weight=style_weight,
         )
         logger.success("Audio data generated and sent successfully")
+        # with BytesIO() as wavContent:
+        #     wavfile.write(wavContent, sr, audio)
+        #     return Response(content=wavContent.getvalue(), media_type="audio/wav")
+        # WAVファイルをメモリ上で作成
         with BytesIO() as wavContent:
             wavfile.write(wavContent, sr, audio)
-            return Response(content=wavContent.getvalue(), media_type="audio/wav")
+            # メモリバッファを先頭に戻す
+            wavContent.seek(0)
+            # Base64でエンコード
+            base64_encoded = base64.b64encode(wavContent.read()).decode('utf-8')
+
+            # Base64エンコードされたデータをテキストレスポンスとして返す
+            return Response(content=base64_encoded, media_type="text/plain")
 
     @app.get("/models/info")
     def get_loaded_models_info():
